@@ -146,6 +146,10 @@ It will take 5-10 minutes
 (d) For internal communication b/w control plane and worker nodes, open 'all traffic' in the security group of EKS Cluster
 
 
+
+
+
+
 ************************************
 Step 2: Tools Installation
 ************************************
