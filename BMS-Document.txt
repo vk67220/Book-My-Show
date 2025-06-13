@@ -83,6 +83,15 @@ aws configure
 Configure aws by executing below command
 aws configure 
 
+Verify Access
+aws sts get-caller-identity
+
+
+
+
+
+
+
 
 1.3.2. Install KubeCTL (to interact with K8S)
 curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
@@ -145,27 +154,32 @@ It will take 5-10 minutes
 
 (d) For internal communication b/w control plane and worker nodes, open 'all traffic' in the security group of EKS Cluster
 
+Create an IAM Role for the EBS CSI Driver
 
-======================================================================================
-Install the EBS CSI Driver (Optional-if use dynamic provisioning of PersistentVolumes in Kubernetes.
-=====================================================================================
-
-sudo snap install helm --classic
-
-helm version
-
-helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
-helm repo update
-
-helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
+eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
   --namespace kube-system \
-  --set controller.serviceAccount.create=false \
-  --set controller.serviceAccount.name=ebs-csi-controller-sa
+  --cluster kastro-eks \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve
 
-Run the following command to confirm the EBS CSI pods are running:
 
-kubectl get pods -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver,app.kubernetes.io/instance=aws-ebs-csi-driver"
+Find the IAM Role ARN
 
+aws cloudformation describe-stacks \
+  --stack-name eksctl-kastro-eks-addon-iamserviceaccount-kube-system-ebs-csi-controller-sa \
+  --query "Stacks[0].Outputs[?OutputKey=='Role1'].OutputValue" \
+  --output text
+
+Install the EBS CSI Driver as an EKS Add-on
+
+eksctl create addon \
+  --name aws-ebs-csi-driver \
+  --cluster kastro-eks \
+  --service-account-role-arn arn:aws:iam::152088118991:role/eksctl-kastro-eks-addon-iamserviceaccount-kub-Role1-bO9M2HFwDR9L \
+  --force
+
+kubectl get pods -n kube-system | grep ebs
 
 
 
